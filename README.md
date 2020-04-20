@@ -70,6 +70,7 @@ First, I tried to optimize the PID parameters for steering and fixed throttle = 
 #### PID parameters for steering
 I assumed that there is no bias in the simulation, so the integral component Ki is set as zero. Started from proportional components and differential compoonents (Kp and Kd) as 1.0.
 As you can see below video, the vehicle is oscillating a lot especially in the curve.
+
 <img src="./file/1stAttempt.mov.gif" width="480" alt="1st Attempt Video" />
 
  I repeated twiddle optimization several times, and came to the parameter as below.
