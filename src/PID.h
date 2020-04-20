@@ -31,13 +31,25 @@ class PID {
    */
   double TotalError();
 
+  
+  /**
+  * Twiddle.
+  */
+  bool Twiddle();
+  
+  /**
+   * Set private variable: max_steps
+   * @param steps
+   */
+  void Settwiddle_steps(int e_steps, int s_steps);
+  
  private:
   /**
    * PID Errors
    */
-  double p_error;
-  double i_error;
-  double d_error;
+  double p_err;
+  double i_err;
+  double d_err;
 
   /**
    * PID Coefficients
@@ -45,6 +57,20 @@ class PID {
   double Kp;
   double Ki;
   double Kd;
+  
+  int iter;
+  int settle_steps;
+  int eval_steps;
+  double tolerance;
+  double total_err;
+  double best_err;
+
+  double Dpp;
+  double Dpi;
+  double Dpd;
+
+  bool increasing = true;
+  int twiddle_index;
 };
 
 #endif  // PID_H

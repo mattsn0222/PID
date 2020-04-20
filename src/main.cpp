@@ -14,6 +14,10 @@ constexpr double pi() { return M_PI; }
 double deg2rad(double x) { return x * pi() / 180; }
 double rad2deg(double x) { return x * 180 / pi(); }
 
+// twiddle run
+bool steer_twiddle = false;
+bool speed_twiddle = false;
+
 // Checks if the SocketIO event has JSON data.
 // If there is data the JSON object in string format will be returned,
 // else the empty string "" will be returned.
@@ -33,12 +37,34 @@ string hasData(string s) {
 int main() {
   uWS::Hub h;
 
-  PID pid;
+  PID steer_pid;
+  PID speed_pid;
   /**
-   * TODO: Initialize the pid variable.
+   * Initialize the pid variable.
    */
+  // 1st attempt
+  // steer_pid.Init(1.0, 0.0, 1.0);
+  // 2nd attempt
+  // steer_pid.Init(0.4, 0.0, 1.0);
+  // 3rd attempt
+  // steer_pid.Init(0.1, 0.0, 1.0);
+  // 4th attempt
+  // steer_pid.Init(0.2, 0.0, 1.0);
+  // 5th attempt
+  // steer_pid.Init(0.15, 0.0, 1.5);
+  // 6th attempt
+  steer_pid.Init(0.14, 0.0, 1.1);
+  //steer_pid.Init(0.13, 0.0, 1.0);
+  steer_pid.Settwiddle_steps(50, 500);
+  // 1st attempt
+  speed_pid.Init(0.2, 0.0, 1.0);
+  speed_pid.Settwiddle_steps(50, 500);
 
-  h.onMessage([&pid](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, 
+  // 7th attempt with 60MPH
+  // steer_pid.Init(0.14, 0.0, 2.0);
+
+
+  h.onMessage([&steer_pid, &speed_pid](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, 
                      uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
     // The 4 signifies a websocket message
@@ -55,24 +81,44 @@ int main() {
           // j[1] is the data JSON object
           double cte = std::stod(j[1]["cte"].get<string>());
           double speed = std::stod(j[1]["speed"].get<string>());
-          double angle = std::stod(j[1]["steering_angle"].get<string>());
+          // double angle = std::stod(j[1]["steering_angle"].get<string>()); // Not used.
           double steer_value;
+          double throttle_value;
           /**
-           * TODO: Calculate steering value here, remember the steering value is
+           * Calculate steering value here, remember the steering value is
            *   [-1, 1].
-           * NOTE: Feel free to play around with the throttle and speed.
-           *   Maybe use another PID controller to control the speed!
+           * Another PID controller is used to control the speed
            */
-          
-          // DEBUG
-          std::cout << "CTE: " << cte << " Steering Value: " << steer_value 
-                    << std::endl;
+          steer_pid.UpdateError(cte);
+          steer_value = steer_pid.TotalError();
+          if(steer_value > 1.0) steer_value = 1.0;
+          if(steer_value < -1.0) steer_value = -1.0;
 
+          // 1st-6th attempt
+          double target_speed = 35;
+          // 7th attempt
+          // double target_speed = 60;
+          double err_speed = speed - target_speed;
+          speed_pid.UpdateError(err_speed);          
+          throttle_value = speed_pid.TotalError();
+          if(throttle_value > 1.0) throttle_value = 1.0;
+          if(throttle_value < -1.0) throttle_value = -1.0;
+          
           json msgJson;
+          
           msgJson["steering_angle"] = steer_value;
-          msgJson["throttle"] = 0.3;
+          if(steer_twiddle){
+            steer_pid.Twiddle();
+          }
+          if (speed_twiddle) {
+            msgJson["throttle"] = throttle_value;
+            speed_pid.Twiddle();
+          } else {
+            msgJson["throttle"] = 0.3;                       
+          }
+          
           auto msg = "42[\"steer\"," + msgJson.dump() + "]";
-          std::cout << msg << std::endl;
+          //std::cout << msg << std::endl;
           ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
         }  // end "telemetry" if
       } else {
